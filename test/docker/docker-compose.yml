@@ -1,0 +1,45 @@
+version: "2.0"
+services:
+  test:
+    build:
+      context: ./
+      dockerfile: "compile.dockerfile"
+    container_name: test
+    hostname: test
+    image: edeliver/compile
+    volumes:
+      - ../..:/edeliver
+      - ../scripts:/scripts
+      - ../keys/edeliver:/root/.ssh/id_ed25519
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: |
+      /bin/bash -c "
+        ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no constructor@build 'echo i am $$USER on $$(hostname)'
+        ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no deploy@deploy 'echo i am $$USER on $$(hostname)'
+        while true; do sleep 10; done
+      "
+    depends_on:
+      - build
+      - deploy
+  build:
+    build:
+      context: ./
+      dockerfile: "compile.dockerfile"
+    container_name: build
+    hostname: build
+    image: edeliver/build
+    volumes:
+      - ../scripts:/scripts
+      - ../keys/edeliver.pub:/root/.ssh/edeliver.pub
+    command: /scripts/sshd.sh constructor
+  deploy:
+    build:
+      context: ./
+      dockerfile: "deploy.dockerfile"
+    container_name: deploy
+    hostname: deploy
+    image: edeliver/deploy
+    volumes:
+      - ../scripts:/scripts
+      - ../keys/edeliver.pub:/root/.ssh/edeliver.pub
+    command: /scripts/sshd.sh deploy
