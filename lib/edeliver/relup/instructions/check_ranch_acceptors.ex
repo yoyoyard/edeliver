@@ -69,15 +69,15 @@ defmodule Edeliver.Relup.Instructions.CheckRanchAcceptors do
   def ranch_listener_sup(otp_application_name) when is_atom(otp_application_name) do
     endpoint_pid = endpoint(otp_application_name)
     assume true = is_pid(endpoint_pid), "Failed to detect ranch socket acceptors. Phoenix endpoint not found."
+    # matching_children = Supervisor.which_children(endpoint_pid) |> Enum.filter(fn(child) ->
+    #   case child do
+    #     {Phoenix.Endpoint.Server, _pid, _type, [Phoenix.Endpoint.Server]} -> true
+    #     {Phoenix.Endpoint.Handler, _pid, _type, [Phoenix.Endpoint.Handler]} -> true
+    #     _ -> false
+    #   end
+    # end)
+    # assume [{_, endpoint_server_pid, _, _}] = matching_children, "Failed to detect ranch socket acceptors. Phoenix endpoint server not found."
     matching_children = Supervisor.which_children(endpoint_pid) |> Enum.filter(fn(child) ->
-      case child do
-        {Phoenix.Endpoint.Server, _pid, _type, [Phoenix.Endpoint.Server]} -> true
-        {Phoenix.Endpoint.Handler, _pid, _type, [Phoenix.Endpoint.Handler]} -> true
-        _ -> false
-      end
-    end)
-    assume [{_, endpoint_server_pid, _, _}] = matching_children, "Failed to detect ranch socket acceptors. Phoenix endpoint server not found."
-    matching_children = Supervisor.which_children(endpoint_server_pid) |> Enum.filter(fn(child) ->
       case child do
         {{:ranch_listener_sup, _}, _pid, _type, [:ranch_listener_sup]} -> true
         _ -> false
